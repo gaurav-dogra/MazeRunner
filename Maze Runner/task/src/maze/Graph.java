@@ -4,7 +4,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Graph {
-    List<Node> nodes = new ArrayList<>();
+    private final List<Node> nodes = new ArrayList<>();
+    private final List<Node> visitedNodes = new ArrayList<>();
+    public final List<Node> escapePath = new ArrayList<>();
+    private boolean finalNodeReached = false;
     Node start;
 
     public void addNode(String label) {
@@ -12,17 +15,11 @@ public class Graph {
         addNode(node);
     }
 
-    private Graph createPath(String from, String to) {
-        Graph pathGraph = new Graph();
-        Set<String> visited = new HashSet<>();
-        visited.add(from);
-        Node baseNode =  findNode(from);
-        Queue<Node> allNodes = baseNode.adjacencyList;
-
-        for (Node node : nodes) {
-
+    private void addNode(Node node) {
+        if (nodes.isEmpty()) {
+            start = node;
         }
-        return pathGraph;
+        nodes.add(node);
     }
 
     @Override
@@ -45,11 +42,44 @@ public class Graph {
         return graph1Edges.containsAll(graph2Edges);
     }
 
-    private void addNode(Node node) {
-        if (nodes.isEmpty()) {
-            start = node;
+    public void findEscapePath(String entry, String exit) {
+        System.out.println("Graph.findEscapePath");
+        System.out.println("entry = " + entry);
+        System.out.println("exit = " + exit);
+        findEscapePath(findNode(entry), findNode(exit));
+        System.out.println(escapePath);
+    }
+
+    private void findEscapePath(Node entry, Node exit) {
+        System.out.println("Graph.findEscapePath");
+        if (entry.equals(exit)) {
+            escapePath.add(entry);
+            finalNodeReached = true;
+            return;
         }
-        nodes.add(node);
+
+        Set<Node> adjacentNodes = findAdjacentNodes(entry);
+        adjacentNodes.removeAll(visitedNodes);
+        visitedNodes.add(entry);
+        escapePath.add(entry);
+
+        for (Node node : adjacentNodes) {
+            findEscapePath(node, exit);
+            if (finalNodeReached) {
+                return;
+            }
+        }
+
+        escapePath.remove(entry);
+    }
+
+    private Set<Node> findAdjacentNodes(Node start) {
+        List<Edge> edges = start.adjacencyList;
+        Set<Node> adjacentNodes = new HashSet<>();
+        for (Edge edge : edges) {
+            adjacentNodes.add(edge.to);
+        }
+        return adjacentNodes;
     }
 
     private void addLink(Node from, Node to, int weight) {
@@ -115,7 +145,7 @@ public class Graph {
 
         return connection.isPresent();
     }
-    
+
     // Works correctly for any graph
     public int getTotalGraphWeight() {
         return nodes.stream()
@@ -155,7 +185,12 @@ public class Graph {
 
         @Override
         public boolean equals(Object obj) {
-            return super.equals(obj);
+            if (obj.getClass() != this.getClass()) {
+                return false;
+            }
+
+            Node other = (Node) obj;
+            return this.label.equals(other.label);
         }
     }
 

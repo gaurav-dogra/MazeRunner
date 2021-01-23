@@ -4,36 +4,76 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class Maze {
+
+    private Graph mst = new Graph();
     private static final String WALL = "\u2588\u2588";
     private static final String PASSAGE = "  ";
+    private static final String SOLUTION = "\\\\";
+    private int[][] matrix;
+    private int maxRowForNode;
+    private int maxColForNode;
+    private final int ENTRY_ROW = 0;
+    private final int ENTRY_COL = 1;
 
-    private final int[][] matrix;
-    private final int heightLimit;
-    private final int widthLimit;
+    public Maze(int squareMaze) {
+        this(squareMaze, squareMaze);
+    }
 
-    Maze(int height, int width) {
-        matrix = new int[height][width];
-        fillWithOnes();
-        heightLimit = isHeightEven() ? matrix.length - 1 : matrix.length;
-        widthLimit = isWidthEven() ? matrix[0].length - 1 : matrix[0].length;
+    public Maze(String mazeString) {
+        matrix = generateMatrix(mazeString);
+    }
+
+    private int[][] generateMatrix(String mazeString) {
+        String[] rows = mazeString.split("\n");
+        int rowSize = rows.length;
+        int colSize = rows[0].length()/2;
+        int[][] matrix = new int[rowSize][colSize];
+        for (int i = 0; i < rowSize; i++) {
+            String row = rows[i];
+            for (int j = 0, k = 0; j < row.length(); j += 2, k++) {
+                if (row.charAt(j) == ' ') {
+                    matrix[i][k] = 0;
+                } else if (row.charAt(j) == '\u2588') {
+                    matrix[i][k] = 1;
+                }
+            }
+        }
+        return matrix;
+    }
+
+    public boolean isCorrectFormat() {
+        return this.toString().matches("[\u2588\\s\n\r]+");
+    }
+
+    public Maze(int height, int width) {
+        this.maxRowForNode = getMaxRowForNode(height);
+//        System.out.println("maxRowForNode = " + maxRowForNode);
+        this.maxColForNode = getMaxColForNode(width);
+//        System.out.println("maxColForNode = " + maxColForNode);
+        buildMST();
+        generateMatrixFromMST(height, width);
+        addExits(width);
+    }
+
+    private int getMaxColForNode(int width) {
+        return width % 2 == 0 ? width - 3 : width - 2;
+    }
+
+    private int getMaxRowForNode(int height) {
+        return height % 2 == 0 ? height - 3 : height - 2;
     }
 
     private void fillWithOnes() {
         Arrays.stream(matrix).forEach(row -> Arrays.fill(row, 1));
     }
 
-    private boolean isHeightEven() {
-        return matrix.length % 2 == 0;
-    }
+    private void generateMatrixFromMST(int height, int width) {
+        matrix = new int[height][width];
+        fillWithOnes();
 
-    private boolean isWidthEven() {
-        return matrix[0].length % 2 == 0;
-    }
-
-    public void digPassages() {
-        Graph mst = buildMST();
-        for (int i = 1; i < heightLimit; i += 2) {
-            for (int j = 1; j < widthLimit; j += 2) {
+//        System.out.println(mst);
+        for (int i = 1; i <= maxRowForNode; i += 2) {
+            for (int j = 1; j <= maxColForNode; j += 2) {
                 matrix[i][j] = 0;
                 if (mst.isConnected(i + ":" + j, i + ":" + (j + 2))) {
                     matrix[i][j + 1] = 0;
@@ -43,33 +83,30 @@ public class Maze {
                 }
             }
         }
-
-        addExits();
     }
 
-    private void addExits() {
-        matrix[0][1] = 0;
-        int bottomRow = isHeightEven() ? matrix.length - 3 : matrix.length - 2;
-        int rightCol = isWidthEven() ? matrix[0].length - 2 : matrix[0].length - 1;
+    private void addExits(int width) {
+        matrix[ENTRY_ROW][ENTRY_COL] = 0;
+        matrix[maxRowForNode][maxColForNode + 1] = 0;
+        if (width % 2 == 0) {
+            matrix[maxRowForNode][maxColForNode + 2] = 0;
+        }
 
-        matrix[bottomRow][rightCol] = 0;
-        if (isWidthEven())
-            matrix[bottomRow][rightCol + 1] = 0;
-//        System.out.println(matrix.length);
-//        System.out.println(matrix[0].length);
     }
 
-    private Graph buildMST() {
+    private void buildMST() {
         Graph graph = new Graph();
         addNodes(graph);
+//        System.out.println("graph after nodes " + graph);
         linkAllNodes(graph);
-
-        return graph.buildMST();
+//        System.out.println("graph after all nodes are linked " + graph);
+        mst = graph.buildMST();
+//        System.out.println("mst = " + mst);
     }
 
     private void addNodes(Graph graph) {
-        for (int i = 1; i < heightLimit; i += 2) {
-            for (int j = 1; j < widthLimit; j += 2) {
+        for (int i = 1; i <= maxRowForNode; i += 2) {
+            for (int j = 1; j <= maxColForNode; j += 2) {
                 graph.addNode(i + ":" + j);
             }
         }
@@ -77,13 +114,13 @@ public class Maze {
 
     private void linkAllNodes(Graph graph) {
         Random rnd = new Random();
-        for (int i = 1; i < heightLimit; i += 2) {
-            for (int j = 1; j < widthLimit; j += 2) {
-                if (i + 2 <= heightLimit - 1) {
+        for (int i = 1; i <= maxRowForNode; i += 2) {
+            for (int j = 1; j <= maxColForNode; j += 2) {
+                if (i + 2 <= maxRowForNode) {
                     graph.addLink(i + ":" + j, (i + 2) + ":" + j, rnd.nextInt(100));
                 }
 
-                if (j + 2 <= widthLimit - 1) {
+                if (j + 2 <= maxColForNode) {
                     graph.addLink(i + ":" + j, i + ":" + (j + 2), rnd.nextInt(100));
                 }
             }
@@ -100,7 +137,16 @@ public class Maze {
             }
             sb.append("\n");
         }
-
         return sb.toString();
     }
+
+    public void printSolution() {
+        for (int[] row : matrix) {
+            for (int cell : row) {
+                System.out.print(cell + " ");
+            }
+            System.out.println();
+        }
+    }
+
 }

@@ -11,7 +11,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         String input;
-        String stringMaze = null;
+        Maze maze = null;
         boolean isDisplayEnabled = false;
         boolean isSaveEnabled = false;
 
@@ -19,23 +19,23 @@ public class Main {
             printMenu(isSaveEnabled, isDisplayEnabled);
             input = scanner.next();
             switch (input) {
-                case "1":
+                case "1": // new maze
                     System.out.println("Enter the size of a new maze");
                     int userInput = scanner.nextInt();
-                    Maze maze = new Maze(userInput, userInput);
-                    maze.digPassages();
-                    stringMaze = maze.toString();
+                    maze = new Maze(userInput);
                     new ConsolePrinter().print(maze);
                     isSaveEnabled = true;
                     isDisplayEnabled = true;
-
                     break;
-                case "2":
+
+                case "2": // Load maze from File
                     System.out.println("Enter the file name");
                     String loadFileName = scanner.next();
                     try {
-                        stringMaze = new Scanner(new File(loadFileName)).useDelimiter("\\Z").next();
-                        if (isCorrectFormat(stringMaze)) {
+                        String strMaze = new Scanner(new File(loadFileName)).useDelimiter("\\Z").next();
+                        maze = new Maze(strMaze);
+                        if (maze.isCorrectFormat()) {
+                            System.out.println(loadFileName + " loaded from the disk");
                             isDisplayEnabled = true;
                         } else {
                             System.out.println("not correct format");
@@ -44,23 +44,28 @@ public class Main {
                         System.out.println("The file ... does not exist");
                     }
                     break;
-                case "3":
+
+                case "3": // Save Maze to a file
                     System.out.println("Enter the file name");
                     String saveFileName = scanner.next();
                     try (PrintWriter writer = new PrintWriter(saveFileName)) {
-                        writer.print(stringMaze);
+                        assert maze != null;
+                        writer.write(maze.toString());
+                        System.out.println("Maze saved to " + saveFileName);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     break;
-                case "4":
-                    if (stringMaze != null) {
-                        System.out.println(stringMaze);
-                    }
+
+                case "4": // display the maze
+                        System.out.println(maze);
+                        break;
+
+                case "5": // find the escape
+                    assert maze != null;
+                    maze.printSolution();
                     break;
-                case "5":
-                    MazeEscape me = new MazeEscape(stringMaze);
-                    stringMaze = me.getEscape();
+
                 case "0":
                     break;
                 default:
@@ -71,10 +76,6 @@ public class Main {
         System.out.println("Bye!");
 
 
-    }
-
-    private static boolean isCorrectFormat(String content) {
-        return content.matches("[\\s\r\n\u2588]+");
     }
 
     private static void printMenu(boolean isSaveEnabled, boolean isDisplayEnabled) {
