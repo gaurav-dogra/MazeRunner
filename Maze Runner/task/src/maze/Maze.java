@@ -1,10 +1,10 @@
 package maze;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 public class Maze {
-
     private Graph mst = new Graph();
     private static final String WALL = "\u2588\u2588";
     private static final String PASSAGE = "  ";
@@ -50,9 +50,9 @@ public class Maze {
 //        System.out.println("maxRowForNode = " + maxRowForNode);
         this.maxColForNode = getMaxColForNode(width);
 //        System.out.println("maxColForNode = " + maxColForNode);
-        buildMST();
-        generateMatrixFromMST(height, width);
-        addExits(width);
+        mst = buildMST();
+        generateMatrixFromMST(height, width, mst);
+        addExitsToMatrix(width);
     }
 
     private int getMaxColForNode(int width) {
@@ -67,7 +67,7 @@ public class Maze {
         Arrays.stream(matrix).forEach(row -> Arrays.fill(row, 1));
     }
 
-    private void generateMatrixFromMST(int height, int width) {
+    private void generateMatrixFromMST(int height, int width, Graph mst) {
         matrix = new int[height][width];
         fillWithOnes();
 
@@ -85,7 +85,7 @@ public class Maze {
         }
     }
 
-    private void addExits(int width) {
+    private void addExitsToMatrix(int width) {
         matrix[ENTRY_ROW][ENTRY_COL] = 0;
         matrix[maxRowForNode][maxColForNode + 1] = 0;
         if (width % 2 == 0) {
@@ -94,14 +94,11 @@ public class Maze {
 
     }
 
-    private void buildMST() {
+    private Graph buildMST() {
         Graph graph = new Graph();
         addNodes(graph);
-//        System.out.println("graph after nodes " + graph);
         linkAllNodes(graph);
-//        System.out.println("graph after all nodes are linked " + graph);
-        mst = graph.buildMST();
-//        System.out.println("mst = " + mst);
+        return graph.buildMST();
     }
 
     private void addNodes(Graph graph) {
@@ -141,12 +138,52 @@ public class Maze {
     }
 
     public void printSolution() {
+
+        List<String> escapePath = mst.findEscapePath("1:1", maxRowForNode + ":" + maxColForNode);
+        matrix[0][1] = 2;
+        matrix[maxRowForNode][maxColForNode + 1] = 2;
+        if (matrix[0].length % 2 == 0) {
+            matrix[maxRowForNode][maxColForNode + 2] = 2;
+        }
+
+        for (int i = 0; i < escapePath.size() - 1; i++) {
+
+            String[] splitLabel = escapePath.get(i).split(":");
+            int currentNodeRow = Integer.parseInt(splitLabel[0]);
+            int currentNodeCol = Integer.parseInt(splitLabel[1]);
+
+            splitLabel = escapePath.get(i + 1).split(":");
+            int nextNodeRow = Integer.parseInt(splitLabel[0]);
+            int nextNodeCol = Integer.parseInt(splitLabel[1]);
+
+            matrix[currentNodeRow][currentNodeCol] = 2;
+            matrix[nextNodeRow][nextNodeCol] = 2;
+
+            if (currentNodeRow < nextNodeRow) {
+                matrix[currentNodeRow + 1][currentNodeCol] = 2;
+            } else if (currentNodeRow > nextNodeRow) {
+                matrix[currentNodeRow - 1][currentNodeCol] = 2;
+            } else if (currentNodeCol < nextNodeCol) {
+                matrix[currentNodeRow][currentNodeCol + 1] = 2;
+            } else if (currentNodeCol > nextNodeCol) {
+                matrix[currentNodeRow][currentNodeCol - 1] = 2;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
         for (int[] row : matrix) {
             for (int cell : row) {
-                System.out.print(cell + " ");
+                if(cell == 0) {
+                    sb.append(PASSAGE);
+                } else if(cell == 1) {
+                    sb.append(WALL);
+                } else if(cell == 2) {
+                    sb.append(SOLUTION);
+                }
             }
-            System.out.println();
+            sb.append("\n");
         }
+        System.out.println(sb);
     }
 
 }

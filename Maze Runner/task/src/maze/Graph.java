@@ -42,16 +42,16 @@ public class Graph {
         return graph1Edges.containsAll(graph2Edges);
     }
 
-    public void findEscapePath(String entry, String exit) {
-        System.out.println("Graph.findEscapePath");
-        System.out.println("entry = " + entry);
-        System.out.println("exit = " + exit);
+    public List<String> findEscapePath(String entry, String exit) {
         findEscapePath(findNode(entry), findNode(exit));
-        System.out.println(escapePath);
+        List<String> escapePathLabels = new ArrayList<>();
+        for (Node node : escapePath) {
+            escapePathLabels.add(node.label);
+        }
+        return escapePathLabels;
     }
 
     private void findEscapePath(Node entry, Node exit) {
-        System.out.println("Graph.findEscapePath");
         if (entry.equals(exit)) {
             escapePath.add(entry);
             finalNodeReached = true;
