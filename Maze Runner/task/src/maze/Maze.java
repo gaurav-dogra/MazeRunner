@@ -12,47 +12,62 @@ public class Maze {
     private int[][] matrix;
     private int maxRowForNode;
     private int maxColForNode;
-    private final int ENTRY_ROW = 0;
-    private final int ENTRY_COL = 1;
 
     public Maze(int squareMaze) {
         this(squareMaze, squareMaze);
     }
 
     public Maze(String mazeString) {
-        matrix = generateMatrix(mazeString);
-    }
-
-    private int[][] generateMatrix(String mazeString) {
-        String[] rows = mazeString.split("\n");
-        int rowSize = rows.length;
-        int colSize = rows[0].length()/2;
-        int[][] matrix = new int[rowSize][colSize];
-        for (int i = 0; i < rowSize; i++) {
-            String row = rows[i];
-            for (int j = 0, k = 0; j < row.length(); j += 2, k++) {
-                if (row.charAt(j) == ' ') {
-                    matrix[i][k] = 0;
-                } else if (row.charAt(j) == '\u2588') {
-                    matrix[i][k] = 1;
-                }
-            }
-        }
-        return matrix;
-    }
-
-    public boolean isCorrectFormat() {
-        return this.toString().matches("[\u2588\\s\n\r]+");
+        createMatrixFromString(mazeString);
+        buildMstFromMatrix();
+        addExitsToMatrix();
     }
 
     public Maze(int height, int width) {
         this.maxRowForNode = getMaxRowForNode(height);
-//        System.out.println("maxRowForNode = " + maxRowForNode);
         this.maxColForNode = getMaxColForNode(width);
-//        System.out.println("maxColForNode = " + maxColForNode);
-        mst = buildMST();
+        buildMstFromScratch();
         generateMatrixFromMST(height, width, mst);
-        addExitsToMatrix(width);
+        addExitsToMatrix();
+    }
+
+    private void buildMstFromMatrix() {
+        addNodes(mst);
+        for (int i = 1; i <= maxRowForNode; i += 2) {
+            for (int j = 1; j <= maxColForNode; j += 2) {
+                String currentNode = i + ":" + j;
+                if (i != maxRowForNode && matrix[i + 1][j] == 0) {
+                    String southernNode = (i + 2) + ":" + j;
+                    mst.addLink(currentNode, southernNode, 1);
+                }
+
+                if (j != maxColForNode && matrix[i][j + 1] == 0) {
+                    String easternNode = i + ":" + (j + 2);
+                    mst.addLink(currentNode, easternNode, 1);
+                }
+            }
+        }
+    }
+
+    private void createMatrixFromString(String mazeString) {
+        int height = mazeString.split("\n").length;
+        int width = mazeString.substring(0, mazeString.indexOf("\n")).length() / 2;
+        maxRowForNode = getMaxRowForNode(height);
+        maxColForNode = getMaxColForNode(width);
+        matrix = new int[height][width];
+
+        String[] rows = mazeString.split("\n");
+        for (int i = 0; i < rows.length; i++) {
+            String row = rows[i];
+            for (int j = 0, k = 0; j < row.length() - 1; j += 2, k++) {
+                String element = row.substring(j, j + 2);
+                matrix[i][k] = element.equals(WALL) ? 1 : 0;
+            }
+        }
+    }
+
+    public boolean isCorrectFormat() {
+        return this.toString().matches("[\u2588\\s\n\r]+");
     }
 
     private int getMaxColForNode(int width) {
@@ -85,20 +100,22 @@ public class Maze {
         }
     }
 
-    private void addExitsToMatrix(int width) {
+    private void addExitsToMatrix() {
+        int ENTRY_ROW = 0;
+        int ENTRY_COL = 1;
         matrix[ENTRY_ROW][ENTRY_COL] = 0;
         matrix[maxRowForNode][maxColForNode + 1] = 0;
-        if (width % 2 == 0) {
+        if (matrix[0].length % 2 == 0) {
             matrix[maxRowForNode][maxColForNode + 2] = 0;
         }
 
     }
 
-    private Graph buildMST() {
+    private void buildMstFromScratch() {
         Graph graph = new Graph();
         addNodes(graph);
         linkAllNodes(graph);
-        return graph.buildMST();
+        mst = graph.buildMST();
     }
 
     private void addNodes(Graph graph) {
