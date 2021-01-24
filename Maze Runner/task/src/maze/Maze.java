@@ -8,7 +8,7 @@ public class Maze {
     private Graph mst = new Graph();
     private static final String WALL = "\u2588\u2588";
     private static final String PASSAGE = "  ";
-    private static final String SOLUTION = "\\\\";
+    private static final String SOLUTION_SYMBOL = "//";
     private int[][] matrix;
     private int maxRowForNode;
     private int maxColForNode;
@@ -85,8 +85,6 @@ public class Maze {
     private void generateMatrixFromMST(int height, int width, Graph mst) {
         matrix = new int[height][width];
         fillWithOnes();
-
-//        System.out.println(mst);
         for (int i = 1; i <= maxRowForNode; i += 2) {
             for (int j = 1; j <= maxColForNode; j += 2) {
                 matrix[i][j] = 0;
@@ -108,7 +106,6 @@ public class Maze {
         if (matrix[0].length % 2 == 0) {
             matrix[maxRowForNode][maxColForNode + 2] = 0;
         }
-
     }
 
     private void buildMstFromScratch() {
@@ -154,24 +151,20 @@ public class Maze {
         return sb.toString();
     }
 
-    public void printSolution() {
+    public void findEscape() {
 
         List<String> escapePath = mst.findEscapePath("1:1", maxRowForNode + ":" + maxColForNode);
-        matrix[0][1] = 2;
-        matrix[maxRowForNode][maxColForNode + 1] = 2;
-        if (matrix[0].length % 2 == 0) {
-            matrix[maxRowForNode][maxColForNode + 2] = 2;
-        }
+        markEntryExit();
 
         for (int i = 0; i < escapePath.size() - 1; i++) {
 
-            String[] splitLabel = escapePath.get(i).split(":");
-            int currentNodeRow = Integer.parseInt(splitLabel[0]);
-            int currentNodeCol = Integer.parseInt(splitLabel[1]);
+            String[] currentNode = escapePath.get(i).split(":");
+            int currentNodeRow = Integer.parseInt(currentNode[0]);
+            int currentNodeCol = Integer.parseInt(currentNode[1]);
 
-            splitLabel = escapePath.get(i + 1).split(":");
-            int nextNodeRow = Integer.parseInt(splitLabel[0]);
-            int nextNodeCol = Integer.parseInt(splitLabel[1]);
+            String[] nextNode = escapePath.get(i + 1).split(":");
+            int nextNodeRow = Integer.parseInt(nextNode[0]);
+            int nextNodeCol = Integer.parseInt(nextNode[1]);
 
             matrix[currentNodeRow][currentNodeCol] = 2;
             matrix[nextNodeRow][nextNodeCol] = 2;
@@ -187,20 +180,33 @@ public class Maze {
             }
         }
 
+        System.out.println(printMatrixWithSolution());
+
+    }
+
+    private String printMatrixWithSolution() {
         StringBuilder sb = new StringBuilder();
         for (int[] row : matrix) {
             for (int cell : row) {
-                if(cell == 0) {
+                if (cell == 0) {
                     sb.append(PASSAGE);
-                } else if(cell == 1) {
+                } else if (cell == 1) {
                     sb.append(WALL);
-                } else if(cell == 2) {
-                    sb.append(SOLUTION);
+                } else if (cell == 2) {
+                    sb.append(SOLUTION_SYMBOL);
                 }
             }
             sb.append("\n");
         }
-        System.out.println(sb);
+        return sb.toString();
+    }
+
+    private void markEntryExit() {
+        matrix[0][1] = 2; // entry/exit
+        matrix[maxRowForNode][maxColForNode + 1] = 2; // entry/exit
+        if (matrix[0].length % 2 == 0) {
+            matrix[maxRowForNode][maxColForNode + 2] = 2; // entry/exit on extra wall
+        }
     }
 
 }

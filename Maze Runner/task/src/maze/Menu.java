@@ -46,12 +46,17 @@ public class Menu {
                     displayMaze();
                     break;
                 case "5": // find escape
+                    findEscape();
                     break;
                 default:
                     activeMenu = SHORT_MENU;
-            }5
+            }
             System.out.println(activeMenu);
         }
+    }
+
+    private void findEscape() {
+        maze.findEscape();
     }
 
     private void displayMaze() {
